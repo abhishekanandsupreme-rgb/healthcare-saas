@@ -1,0 +1,104 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id           String    @id @default(cuid())
+  mrn          String    @unique // Medical Record Number
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime  @db.Date
+  gender       String
+  email        String?
+  phone        String?
+  address      String?
+  city         String?
+  state        String?
+  zipCode      String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  appointments Appointment[]
+  auditLogs    AuditLog[]
+
+  @@index([mrn])
+  @@index([lastName, firstName])
+  @@map("patients")
+}
+
+model Provider {
+  id           String    @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String    @unique
+  npi          String    @unique // National Provider Identifier
+  specialty    String
+  license      String?
+  department   String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  appointments Appointment[]
+  auditLogs    AuditLog[]
+
+  @@index([npi])
+  @@index([lastName, firstName])
+  @@map("providers")
+}
+
+model Appointment {
+  id           String    @id @default(cuid())
+  patientId    String
+  providerId   String
+  startTime    DateTime
+  endTime      DateTime
+  type         String    // e.g., "follow_up", "consultation", "procedure"
+  status       String    @default("scheduled") // scheduled, confirmed, completed, cancelled, no_show
+  reason       String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  patient      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  provider     Provider  @relation(fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@index([providerId])
+  @@index([startTime])
+  @@index([status])
+  @@map("appointments")
+}
+
+model AuditLog {
+  id           String    @id @default(cuid())
+  actorId      String    // User ID who performed the action
+  actorType    String    // "provider", "admin", "system"
+  actorName    String
+  patientId    String?
+  resourceType String    // "patient", "appointment", "provider", "system"
+  resourceId   String?
+  action       String    // "create", "read", "update", "delete", "login", "logout"
+  ipAddress    String?
+  userAgent    String?
+  details      String?   // JSON string for additional context
+  timestamp    DateTime  @default(now())
+
+  // Relations
+  patient      Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([patientId])
+  @@index([resourceType, resourceId])
+  @@index([timestamp])
+  @@index([action])
+  @@map("audit_logs")
+}
