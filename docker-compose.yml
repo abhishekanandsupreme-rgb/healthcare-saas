@@ -1,4 +1,4 @@
-version: "3.9"
+# version removed - Compose V2+
 
 services:
   postgres:
@@ -12,8 +12,8 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - C:/Users/asus/healthcare-saas/docker/postgres-data:/var/lib/postgresql/data
-      - C:/Users/asus/healthcare-saas/docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U healthcare -d healthcare_saas"]
       interval: 10s
@@ -38,8 +38,8 @@ services:
 
   app:
     build:
-      context: C:/Users/asus/healthcare-saas/backend
-      dockerfile: C:/Users/asus/healthcare-saas/backend/Dockerfile
+      context: ./backend
+      dockerfile: backend/Dockerfile
     container_name: healthcare-app
     restart: unless-stopped
     ports:
@@ -50,7 +50,7 @@ services:
       - JWT_SECRET=replace-with-production-secret
       - PORT=3000
     volumes:
-      - C:/Users/asus/healthcare-saas/docker/healthcheck.sh:/usr/src/app/healthcheck.sh:ro
+      - ./docker/healthcheck.sh:/usr/src/app/healthcheck.sh:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -73,4 +73,4 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: C:/Users/asus/healthcare-saas/docker/postgres-data
+      device: ./docker/postgres-data

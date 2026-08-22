@@ -1,0 +1,10 @@
+{
+  "name": "healthcare-saas-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "echo 'Backend build placeholder - scaffold exists, no compiled output yet'",
+    "start": "echo 'Backend start placeholder - scaffold exists, no runnable output yet'"
+  }
+}

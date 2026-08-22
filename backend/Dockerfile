@@ -39,7 +39,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Add health check script
-COPY C:/Users/asus/healthcare-saas/docker/healthcheck.sh ./healthcheck.sh
+COPY ../docker/healthcheck.sh ./healthcheck.sh
 RUN chmod +x ./healthcheck.sh
 
 # Expose the API port
