@@ -1,0 +1,40 @@
+{
+  "name": "healthcare-saas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "postcss.config.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhishekanandsupreme-rgb/healthcare-saas.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/abhishekanandsupreme-rgb/healthcare-saas/issues"
+  },
+  "homepage": "https://github.com/abhishekanandsupreme-rgb/healthcare-saas#readme",
+  "dependencies": {
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^20.19.43",
+    "@types/react": "^18.3.31",
+    "autoprefixer": "^10.5.4",
+    "postcss": "^8.5.26",
+    "typescript": "^5.9.3"
+  }
+}
