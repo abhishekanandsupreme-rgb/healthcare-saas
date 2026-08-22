@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: healthcare-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: healthcare
+      POSTGRES_PASSWORD: healthcare_password
+      POSTGRES_DB: healthcare_saas
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - C:/Users/asus/healthcare-saas/docker/postgres-data:/var/lib/postgresql/data
+      - C:/Users/asus/healthcare-saas/docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U healthcare -d healthcare_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - healthcare-network
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: healthcare-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - healthcare-network
+
+  app:
+    build:
+      context: C:/Users/asus/healthcare-saas/backend
+      dockerfile: C:/Users/asus/healthcare-saas/backend/Dockerfile
+    container_name: healthcare-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://healthcare:healthcare_password@postgres:5432/healthcare_saas
+      - JWT_SECRET=replace-with-production-secret
+      - PORT=3000
+    volumes:
+      - C:/Users/asus/healthcare-saas/docker/healthcheck.sh:/usr/src/app/healthcheck.sh:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "/usr/src/app/healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - healthcare-network
+
+networks:
+  healthcare-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: C:/Users/asus/healthcare-saas/docker/postgres-data

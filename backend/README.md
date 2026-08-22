@@ -47,6 +47,77 @@ backend/
 └── README.md                  # This file
 ```
 
+## Docker Setup
+
+### Prerequisites
+
+- Docker Desktop for Windows installed and running
+- WSL 2 backend enabled (required for bind mounts on Windows)
+
+### Quick Start
+
+```powershell
+# From the repository root (C:/Users/asus/healthcare-saas)
+docker compose up --build
+```
+
+This starts three containers:
+- **PostgreSQL 15** on `localhost:5432`
+- **Adminer** (DB UI) on `localhost:8080`
+- **API service** (placeholder) on `localhost:3000`
+
+### Services
+
+| Service   | Image                | Port  | Description                          |
+|-----------|----------------------|-------|--------------------------------------|
+| postgres  | postgres:15-alpine   | 5432  | PostgreSQL database                  |
+| adminer   | adminer:4.8.1        | 8080  | Database management web UI           |
+| app       | Built from backend/  | 3000  | Express.js API container             |
+
+### Database Initialization
+
+`docker/init.sql` is automatically executed on first startup. It contains the same schema as
+`C:/Users/asus/healthcare-saas/backend/prisma/migrations/001_init.sql`.
+
+### Environment Variables
+
+The default compose stack uses these values. Override with `.env` or `docker compose config` as needed:
+
+```env
+POSTGRES_USER=healthcare
+POSTGRES_PASSWORD=healthcare_password
+POSTGRES_DB=healthcare_saas
+DATABASE_URL=postgresql://healthcare:healthcare_password@postgres:5432/healthcare_saas
+JWT_SECRET=replace-with-production-secret
+NODE_ENV=production
+```
+
+### Useful Commands
+
+```powershell
+# Start in background
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Stop services
+docker compose down
+
+# Stop and remove volumes (data loss)
+docker compose down -v
+
+# Rebuild after code changes
+docker compose up --build
+```
+
+### Notes
+
+- The app Dockerfile uses a multi-stage build (`builder` + `runtime`) based on `node:20-alpine`.
+- `C:/Users/asus/healthcare-saas/.dockerignore` excludes `node_modules`, `.next`, and `.git` from the build context.
+- Health checks are configured for Postgres and the API container.
+- The API health check script lives at `C:/Users/asus/healthcare-saas/docker/healthcheck.sh`.
+
 ## Database Schema
 
 ### Models
