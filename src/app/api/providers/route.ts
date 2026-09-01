@@ -1,5 +1,6 @@
-import { providers } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import { jsonResponse, errorResponse, getBody } from '@/lib/store';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,19 +9,21 @@ export async function GET(request: Request) {
   const acceptingNew = searchParams.get('acceptingNewPatients');
 
   if (id) {
-    const provider = providers.getById(id);
+    const provider = await prisma.provider.findUnique({ where: { id } });
     if (!provider) return errorResponse('Provider not found', 404);
     return jsonResponse(provider);
   }
 
-  let results = providers.getAll();
+  const where: Prisma.ProviderWhereInput = {};
   if (specialty) {
-    results = results.filter((p) => p.specialty.toLowerCase().includes(specialty.toLowerCase()));
+    where.specialty = { contains: specialty, mode: 'insensitive' };
   }
   if (acceptingNew !== null) {
-    results = results.filter((p) => p.acceptingNewPatients === (acceptingNew === 'true'));
+    where.acceptingNewPatients = acceptingNew === 'true';
   }
-  return jsonResponse(results);
+
+  const providers = await prisma.provider.findMany({ where, orderBy: { createdAt: 'desc' } });
+  return jsonResponse(providers);
 }
 
 export async function POST(request: Request) {
@@ -43,34 +46,33 @@ export async function POST(request: Request) {
       bufferMinutesBetweenAppointments: number;
     }>(request);
 
-    const id = `prov-${Date.now()}`;
-    const now = new Date().toISOString();
+    const now = new Date();
+    const provider = await prisma.provider.create({
+      data: {
+        firstName: body.firstName,
+        lastName: body.lastName,
+        npi: body.npi,
+        dea: body.dea,
+        license: body.licenseNumber,
+        licenseState: body.licenseState,
+        specialty: body.specialty,
+        acceptingNewPatients: body.acceptingNewPatients,
+        maxDailyAppointments: body.maxDailyAppointments,
+        email: body.email,
+        phone: body.phone,
+        title: body.title,
+        pronouns: body.pronouns,
+        defaultSlotDurationMinutes: body.defaultSlotDurationMinutes,
+        bufferMinutesBetweenAppointments: body.bufferMinutesBetweenAppointments,
+        createdBy: 'api-user',
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
 
-    const provider = {
-      id,
-      firstName: body.firstName,
-      lastName: body.lastName,
-      npi: body.npi,
-      dea: body.dea,
-      licenseNumber: body.licenseNumber,
-      licenseState: body.licenseState,
-      specialty: body.specialty,
-      acceptingNewPatients: body.acceptingNewPatients,
-      maxDailyAppointments: body.maxDailyAppointments,
-      email: body.email,
-      phone: body.phone,
-      title: body.title,
-      pronouns: body.pronouns,
-      defaultSlotDurationMinutes: body.defaultSlotDurationMinutes,
-      bufferMinutesBetweenAppointments: body.bufferMinutesBetweenAppointments,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: 'api-user',
-    };
-
-    providers.create(provider);
     return jsonResponse(provider, 201);
-  } catch {
+  } catch (err) {
+    console.error('POST /api/providers error:', err);
     return errorResponse('Invalid request body', 400);
   }
 }

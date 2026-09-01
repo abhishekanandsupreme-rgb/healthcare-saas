@@ -1,23 +1,25 @@
-import { providers } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import { jsonResponse, errorResponse } from '@/lib/store';
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const provider = providers.getById(params.id);
+  const provider = await prisma.provider.findUnique({ where: { id: params.id } });
   if (!provider) return errorResponse('Provider not found', 404);
   return jsonResponse(provider);
 }
 
 export async function PUT(_request: Request, { params }: { params: { id: string } }) {
-  const provider = providers.getById(params.id);
-  if (!provider) return errorResponse('Provider not found', 404);
+  const existing = await prisma.provider.findUnique({ where: { id: params.id } });
+  if (!existing) return errorResponse('Provider not found', 404);
 
   const body = await _request.json();
-  const updated = providers.update(params.id, {
-    ...body,
-    updatedAt: new Date().toISOString(),
+  const updated = await prisma.provider.update({
+    where: { id: params.id },
+    data: {
+      ...body,
+      updatedAt: new Date(),
+    },
   });
 
-  if (!updated) return errorResponse('Failed to update provider', 500);
   return jsonResponse(updated);
 }
 
@@ -26,10 +28,9 @@ export async function PATCH(_request: Request, { params }: { params: { id: strin
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const exists = providers.getById(params.id);
+  const exists = await prisma.provider.findUnique({ where: { id: params.id } });
   if (!exists) return errorResponse('Provider not found', 404);
 
-  const removed = providers.remove(params.id);
-  if (!removed) return errorResponse('Failed to delete provider', 500);
+  await prisma.provider.delete({ where: { id: params.id } });
   return jsonResponse({ success: true, message: 'Provider deleted' });
 }

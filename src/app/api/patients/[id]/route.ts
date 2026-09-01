@@ -1,23 +1,25 @@
-import { patients } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import { jsonResponse, errorResponse } from '@/lib/store';
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const patient = patients.getById(params.id);
+  const patient = await prisma.patient.findUnique({ where: { id: params.id } });
   if (!patient) return errorResponse('Patient not found', 404);
   return jsonResponse(patient);
 }
 
 export async function PUT(_request: Request, { params }: { params: { id: string } }) {
-  const patient = patients.getById(params.id);
-  if (!patient) return errorResponse('Patient not found', 404);
+  const existing = await prisma.patient.findUnique({ where: { id: params.id } });
+  if (!existing) return errorResponse('Patient not found', 404);
 
   const body = await _request.json();
-  const updated = patients.update(params.id, {
-    ...body,
-    updatedAt: new Date().toISOString(),
+  const updated = await prisma.patient.update({
+    where: { id: params.id },
+    data: {
+      ...body,
+      updatedAt: new Date(),
+    },
   });
 
-  if (!updated) return errorResponse('Failed to update patient', 500);
   return jsonResponse(updated);
 }
 
@@ -26,10 +28,9 @@ export async function PATCH(_request: Request, { params }: { params: { id: strin
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const exists = patients.getById(params.id);
+  const exists = await prisma.patient.findUnique({ where: { id: params.id } });
   if (!exists) return errorResponse('Patient not found', 404);
 
-  const removed = patients.remove(params.id);
-  if (!removed) return errorResponse('Failed to delete patient', 500);
+  await prisma.patient.delete({ where: { id: params.id } });
   return jsonResponse({ success: true, message: 'Patient deleted' });
 }

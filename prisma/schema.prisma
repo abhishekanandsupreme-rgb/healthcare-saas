@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id           String   @id @default(cuid())
+  mrn          String?  @unique
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime @db.Date
+  gender       String
+  email        String?
+  phone        String?
+  address      Json?
+  city         String?
+  state        String?
+  zipCode      String?
+  allergies    Json?
+  insuranceMemberId String?
+  insuranceProvider String?
+  insuranceGroupNumber String?
+  primaryProviderId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String
+
+  appointments Appointment[]
+  billingRecords BillingRecord[]
+  insuranceRecords InsuranceRecord[]
+  checkIns     CheckIn[]
+
+  @@index([lastName, firstName])
+  @@map("patients")
+}
+
+model Provider {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String  @unique
+  npi          String? @unique
+  dea          String?
+  license      String?
+  licenseState String?
+  specialty    String
+  department   String?
+  isActive     Boolean  @default(true)
+  title        String?
+  pronouns     String?
+  phone        String?
+  maxDailyAppointments Int    @default(20)
+  defaultSlotDurationMinutes Int @default(15)
+  bufferMinutesBetweenAppointments Int @default(5)
+  acceptingNewPatients Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String
+
+  appointments Appointment[]
+
+  @@index([lastName, firstName])
+  @@map("providers")
+}
+
+model Appointment {
+  id           String   @id @default(cuid())
+  patientId    String
+  providerId   String
+  startTime    DateTime
+  endTime      DateTime
+  type         String
+  status       String   @default("scheduled")
+  reason       String?
+  notes        String?
+  billingCode  String?
+  locationId   String?
+  visitType    String?
+  reasonForVisit String?
+  visitNotes   String?
+  insuranceVerified Boolean @default(false)
+  actualStart  DateTime?
+  actualEnd    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    String
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  provider     Provider @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  billingRecords BillingRecord[]
+  checkIns     CheckIn[]
+
+  @@index([patientId])
+  @@index([providerId])
+  @@index([startTime])
+  @@index([status])
+  @@map("appointments")
+}
+
+model BillingRecord {
+  id           String   @id @default(cuid())
+  patientId    String
+  appointmentId String?
+  amount       Float
+  currency     String   @default("USD")
+  status       String   @default("pending")
+  insuranceAmount Float  @default(0)
+  patientAmount Float
+  billingCode  String?
+  description  String
+  dueDate      DateTime @db.Date
+  paidAt       DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointment  Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([patientId])
+  @@index([status])
+  @@map("billing_records")
+}
+
+model InsuranceRecord {
+  id           String   @id @default(cuid())
+  patientId    String
+  insuranceProvider String
+  memberId     String
+  groupNumber  String
+  eligibilityStatus String @default("pending")
+  coverageStart DateTime @db.Date
+  coverageEnd  DateTime @db.Date
+  copayAmount  Float    @default(0)
+  deductibleRemaining Float @default(0)
+  verifiedAt   DateTime
+
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@map("insurance_records")
+}
+
+model CheckIn {
+  id           String   @id @default(cuid())
+  appointmentId String
+  patientId    String
+  checkedInAt  DateTime @default(now())
+  status       String   @default("checked-in")
+  notes        String?
+
+  appointment  Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient      Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId])
+  @@index([patientId])
+  @@map("check_ins")
+}

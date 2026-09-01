@@ -1,18 +1,17 @@
-import { checkInRecords, appointments, patients } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import { jsonResponse, errorResponse, getBody } from '@/lib/store';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const appointmentId = searchParams.get('appointmentId');
   const patientId = searchParams.get('patientId');
 
-  let results = checkInRecords;
-  if (appointmentId) {
-    results = results.filter((c) => c.appointmentId === appointmentId);
-  }
-  if (patientId) {
-    results = results.filter((c) => c.patientId === patientId);
-  }
+  const where: Prisma.CheckInWhereInput = {};
+  if (appointmentId) where.appointmentId = appointmentId;
+  if (patientId) where.patientId = patientId;
+
+  const results = await prisma.checkIn.findMany({ where, orderBy: { checkedInAt: 'desc' } });
   return jsonResponse(results);
 }
 
@@ -20,35 +19,37 @@ export async function POST(request: Request) {
   try {
     const body = await getBody<{ appointmentId: string; notes?: string }>(request);
 
-    const appointment = appointments.getById(body.appointmentId);
+    const appointment = await prisma.appointment.findUnique({ where: { id: body.appointmentId } });
     if (!appointment) return errorResponse('Appointment not found', 404);
 
-    const patient = patients.getById(appointment.patientId);
+    const patient = await prisma.patient.findUnique({ where: { id: appointment.patientId } });
     if (!patient) return errorResponse('Patient not found', 404);
 
-    const id = `ci-${Date.now()}`;
-    const now = new Date().toISOString();
+    const now = new Date();
 
-    const checkIn: typeof checkInRecords[0] = {
-      id,
-      appointmentId: body.appointmentId,
-      patientId: appointment.patientId,
-      checkedInAt: now,
-      status: 'checked-in',
-      notes: body.notes,
-    };
-
-    checkInRecords.push(checkIn);
+    const checkIn = await prisma.checkIn.create({
+      data: {
+        appointmentId: body.appointmentId,
+        patientId: appointment.patientId,
+        checkedInAt: now,
+        status: 'checked-in',
+        notes: body.notes,
+      },
+    });
 
     // Update appointment status
-    appointments.update(body.appointmentId, {
-      status: 'checked-in',
-      actualStart: now,
-      updatedAt: now,
+    await prisma.appointment.update({
+      where: { id: body.appointmentId },
+      data: {
+        status: 'checked-in',
+        actualStart: now,
+        updatedAt: now,
+      },
     });
 
     return jsonResponse(checkIn, 201);
-  } catch {
+  } catch (err) {
+    console.error('POST /api/checkin error:', err);
     return errorResponse('Invalid request body', 400);
   }
 }

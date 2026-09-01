@@ -1,5 +1,6 @@
-import { appointments } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import { jsonResponse, errorResponse, getBody } from '@/lib/store';
+import type { Prisma } from '@prisma/client';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,19 +9,17 @@ export async function GET(request: Request) {
   const providerId = searchParams.get('providerId');
 
   if (id) {
-    const appointment = appointments.getById(id);
+    const appointment = await prisma.appointment.findUnique({ where: { id } });
     if (!appointment) return errorResponse('Appointment not found', 404);
     return jsonResponse(appointment);
   }
 
-  let results = appointments.getAll();
-  if (patientId) {
-    results = results.filter((a) => a.patientId === patientId);
-  }
-  if (providerId) {
-    results = results.filter((a) => a.providerId === providerId);
-  }
-  return jsonResponse(results);
+  const where: Prisma.AppointmentWhereInput = {};
+  if (patientId) where.patientId = patientId;
+  if (providerId) where.providerId = providerId;
+
+  const appointments = await prisma.appointment.findMany({ where, orderBy: { startTime: 'desc' } });
+  return jsonResponse(appointments);
 }
 
 export async function POST(request: Request) {
@@ -38,30 +37,32 @@ export async function POST(request: Request) {
       billingCode?: string;
     }>(request);
 
-    const id = `apt-${Date.now()}`;
-    const now = new Date().toISOString();
+    const now = new Date();
+    const appointment = await prisma.appointment.create({
+      data: {
+        patientId: body.patientId,
+        providerId: body.providerId,
+        locationId: body.locationId,
+        startTime: new Date(body.scheduledStart),
+        endTime: new Date(body.scheduledEnd),
+        status: body.status || 'scheduled',
+        type: body.visitType,
+        visitType: body.visitType,
+        reasonForVisit: body.reasonForVisit,
+        reason: body.reasonForVisit,
+        visitNotes: body.visitNotes,
+        notes: body.visitNotes,
+        billingCode: body.billingCode,
+        insuranceVerified: false,
+        createdBy: 'api-user',
+        createdAt: now,
+        updatedAt: now,
+      },
+    });
 
-    const appointment = {
-      id,
-      patientId: body.patientId,
-      providerId: body.providerId,
-      locationId: body.locationId,
-      status: body.status || 'scheduled',
-      scheduledStart: body.scheduledStart,
-      scheduledEnd: body.scheduledEnd,
-      visitType: body.visitType,
-      reasonForVisit: body.reasonForVisit,
-      visitNotes: body.visitNotes,
-      billingCode: body.billingCode,
-      insuranceVerified: false,
-      createdAt: now,
-      updatedAt: now,
-      createdBy: 'api-user',
-    };
-
-    appointments.create(appointment);
     return jsonResponse(appointment, 201);
-  } catch {
+  } catch (err) {
+    console.error('POST /api/appointments error:', err);
     return errorResponse('Invalid request body', 400);
   }
 }
