@@ -3,14 +3,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies for native modules (e.g., bcrypt) and Prisma
+# Install dependencies for native modules
 RUN apk add --no-cache libc6-compat python3 make g++ openssl
 
 # Copy dependency manifests first for better layer caching
 COPY package.json package-lock.json* ./
 
 # Install all dependencies (including dev deps for build)
-RUN npm ci
+RUN npm install
 
 # Copy TypeScript source and config
 COPY tsconfig.json .env.example ./
@@ -39,7 +39,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Add health check script
-COPY ../docker/healthcheck.sh ./healthcheck.sh
+COPY docker/healthcheck.sh ./healthcheck.sh
 RUN chmod +x ./healthcheck.sh
 
 # Expose the API port

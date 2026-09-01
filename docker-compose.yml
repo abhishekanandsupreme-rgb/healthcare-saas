@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: healthcare_password
       POSTGRES_DB: healthcare_saas
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -38,7 +38,7 @@ services:
 
   app:
     build:
-      context: ./backend
+      context: .
       dockerfile: backend/Dockerfile
     container_name: healthcare-app
     restart: unless-stopped
@@ -46,7 +46,7 @@ services:
       - "127.0.0.1:3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://healthcare:healthcare_password@postgres:5432/healthcare_saas
+      - DATABASE_URL=postgresql://healthcare:healthcare_password@postgres:5433/healthcare_saas
       - JWT_SECRET=replace-with-production-secret
       - PORT=3000
     volumes:
