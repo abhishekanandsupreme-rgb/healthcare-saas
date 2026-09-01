@@ -84,6 +84,7 @@ model AuditLog {
   actorType    String    // "provider", "admin", "system"
   actorName    String
   patientId    String?
+  providerId   String?
   resourceType String    // "patient", "appointment", "provider", "system"
   resourceId   String?
   action       String    // "create", "read", "update", "delete", "login", "logout"
@@ -94,9 +95,11 @@ model AuditLog {
 
   // Relations
   patient      Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  provider     Provider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
 
   @@index([actorId])
   @@index([patientId])
+  @@index([providerId])
   @@index([resourceType, resourceId])
   @@index([timestamp])
   @@index([action])

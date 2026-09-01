@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   actor_type   VARCHAR(255) NOT NULL,
   actor_name   VARCHAR(255) NOT NULL,
   patient_id   VARCHAR(255) REFERENCES patients(id) ON DELETE SET NULL,
+  provider_id  VARCHAR(255) REFERENCES providers(id) ON DELETE SET NULL,
   resource_type VARCHAR(255) NOT NULL,
   resource_id  VARCHAR(255),
   action       VARCHAR(255) NOT NULL,
@@ -81,6 +82,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 CREATE INDEX idx_audit_logs_actor_id ON audit_logs(actor_id);
 CREATE INDEX idx_audit_logs_patient_id ON audit_logs(patient_id);
+CREATE INDEX idx_audit_logs_provider_id ON audit_logs(provider_id);
 CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
 CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp);
 CREATE INDEX idx_audit_logs_action ON audit_logs(action);
