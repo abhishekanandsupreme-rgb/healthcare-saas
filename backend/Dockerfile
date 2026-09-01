@@ -7,15 +7,15 @@ WORKDIR /app
 RUN apk add --no-cache libc6-compat python3 make g++ openssl
 
 # Copy dependency manifests first for better layer caching
-COPY package.json package-lock.json* ./
+COPY backend/package.json backend/package-lock.json* ./
 
 # Install all dependencies (including dev deps for build)
 RUN npm install
 
 # Copy TypeScript source and config
-COPY tsconfig.json .env.example ./
-COPY src ./src
-COPY prisma ./prisma
+COPY backend/tsconfig.json backend/.env.example ./
+COPY backend/src ./src
+COPY backend/prisma ./prisma
 
 # Generate Prisma Client
 RUN npx prisma generate
