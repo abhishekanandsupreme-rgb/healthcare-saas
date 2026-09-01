@@ -23,17 +23,17 @@ export function getPrismaClient(): PrismaClient {
       ],
     });
 
-    // Attach event listeners for logging
-    prisma.$on('query', (e: unknown) => {
+    // Attach event listeners for logging (cast needed for Prisma 5.x type mismatch)
+    (prisma.$on as any)('query', (e: unknown) => {
       // In production, send to structured logging service
       // console.log('Query:', JSON.stringify(e));
     });
 
-    prisma.$on('error', (e: Error) => {
+    (prisma.$on as any)('error', (e: Error) => {
       console.error('Prisma error:', e);
     });
 
-    prisma.$on('warn', (e: unknown) => {
+    (prisma.$on as any)('warn', (e: unknown) => {
       console.warn('Prisma warning:', JSON.stringify(e));
     });
   }
